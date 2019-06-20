@@ -1,0 +1,46 @@
+.App-header {
+    background-color: #282c34;
+    flex-direction: row;
+    height: 75px;
+    width: 100%;
+    display: flex;
+    text-align: center;
+}
+
+.App-headerLogo {
+    padding-top: 10px;
+    padding-left: 15px;
+    width: 40px;
+}
+
+.App-header ul {
+    margin-block-start: 10px;
+    margin-block-end: 10px;
+    padding-inline-start: 20px;
+    list-style: none;
+}
+
+.App-headerItem {
+    min-width: 60px;
+    float: left;
+    color: rgb(255, 255, 255);
+    text-align: center;
+    padding: 15px;
+    text-decoration: none;
+}
+
+.App-headerItem a {
+    font-size: 18px;
+    text-decoration: none;
+    color: rgb(255, 255, 255);
+}
+
+.App-headerItem.active {
+    border: 2px solid white;
+    border-radius: 5px;
+}
+
+.App-headerItem:hover {
+    border: 2px solid #aaa;
+    border-radius: 5px;
+}

@@ -1,0 +1,35 @@
+.App-gameContainer {
+    margin: 5% 2%;
+    width: 95%;
+    max-width: 800px;
+    height: 90%;
+    height: calc(100% - 150px);
+    max-height: 1000px;
+    display: flex;
+    border: 2px solid black;
+}
+
+.App-gameField {
+    overflow: hidden;
+    flex: 80%;
+    flex-wrap: wrap;
+    display: flex;
+    justify-content: center;
+}
+
+.App-scoreField {
+    overflow: hidden;
+    text-align: center;
+    border-left: 1px solid #333;
+    flex: 20%;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+.App-gameFieldSquare {
+    box-sizing: border-box;
+    background-color: black;
+    border: 1px solid rgb(58, 150, 46);
+    border-radius: 5px;
+    width: 45px;
+    height: 45px;
+}
