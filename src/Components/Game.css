@@ -1,4 +1,5 @@
 .App-gameContainer {
+    outline: none;
     margin: 5% 2%;
     width: 95%;
     max-width: 800px;
@@ -10,18 +11,21 @@
 }
 
 .App-gameField {
+    outline: none;
+    margin: 5px;
+    justify-content: center;
     overflow: hidden;
-    flex: 80%;
+    flex: 70%;
     flex-wrap: wrap;
     display: flex;
-    justify-content: center;
+    flex-direction: row;
 }
 
 .App-scoreField {
     overflow: hidden;
     text-align: center;
     border-left: 1px solid #333;
-    flex: 20%;
+    flex: 30%;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
 
@@ -30,6 +34,10 @@
     background-color: black;
     border: 1px solid rgb(58, 150, 46);
     border-radius: 5px;
-    width: 45px;
-    height: 45px;
+    width: 40px;
+    height: 40px;
+}
+
+.App-gameFieldSquare.active {
+    background-color: #015a07;
 }
