@@ -17,6 +17,10 @@ export default class GameContainer extends React.Component {
         this.setState(gameState);
     }
 
+    onDefeat(gameState) {
+        this.setState(gameState);
+    }
+
     onKeyPress(event) {
         if (event.keyCode === 27) {
             this.game.onReset();
