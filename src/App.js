@@ -16,7 +16,7 @@ class App extends React.Component {
             <div className="App">
                 <div className="App-body">
                     <Header />
-                    <GameContainer game={this.state.gameName} />
+                    <GameContainer gameName={this.state.gameName} />
                     <Footer />
                 </div>
             </div>

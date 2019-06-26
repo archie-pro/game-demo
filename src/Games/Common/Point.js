@@ -1,11 +1,11 @@
 export default class Point {
-    constructor(x, y) {
-        this.X = x;
-        this.Y = y;
+    constructor(x = 0, y = 0) {
+        this.x = x;
+        this.y = y;
     }
 
     isZero() {
-        return !this.x && !this.y;
+        return !(this.x || this.y);
     }
 
     getSquareLength() {

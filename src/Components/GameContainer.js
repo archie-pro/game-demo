@@ -8,9 +8,25 @@ import "./Game.css";
 export default class GameContainer extends React.Component {
     constructor(props) {
         super(props);
-        this.factory = this.factory ? this.factory : new GameFactory();
-        this.game = this.factory.createGameByName(props.gameName);
-        this.state = this.game.getEmptyState();
+        if (!this.state) {
+            this.state = {};
+            this.state.factory = new GameFactory();
+            this.state.game = this.state.factory.createGameByName(props.gameName);
+            let gameState = this.state.game.getEmptyState();
+            this.state.fieldState = gameState.fieldState;
+            this.state.score = gameState.score;
+            this.state.controlState = "start";
+        }
+
+    }
+
+    onControlButtonClick() {
+        if (this.state.controlState === "start") {
+            this.state.game.onStart(
+                (gameState) => this.onTick(gameState),
+                (gameState) => this.onDefeat(gameState));
+            this.setState({ controlState: null });
+        }
     }
 
     onTick(gameState) {
@@ -19,29 +35,32 @@ export default class GameContainer extends React.Component {
 
     onDefeat(gameState) {
         this.setState(gameState);
+        this.setState({ isControlVisible: true });
     }
 
-    onKeyPress(event) {
+    onKeyDown(event) {
+        const game = this.state.game;
         if (event.keyCode === 27) {
-            this.game.onReset();
+            game.onReset();
+            this.setState({ controlState: "start" });
         }
         else if (event.keyCode === 80) {
-            this.game.onPause();
+            game.onPause();
         }
         else if (event.keyCode === 32) {
-            this.game.onAction();
+            game.onAction();
         }
-        else if (event.keyCode === 37) {
-            this.game.onArrowLeft();
+        else if (event.keyCode === 65) {
+            game.onArrowLeft();
         }
-        else if (event.keyCode === 38) {
-            this.game.onArrowUp()
+        else if (event.keyCode === 87) {
+            game.onArrowUp()
         }
-        else if (event.keyCode === 39) {
-            this.game.onArrowRight();
+        else if (event.keyCode === 68) {
+            game.onArrowRight();
         }
-        else if (event.keyCode === 40) {
-            this.game.onArrowDown();
+        else if (event.keyCode === 83) {
+            game.onArrowDown();
         }
 
         event.preventDefault();
@@ -49,10 +68,19 @@ export default class GameContainer extends React.Component {
 
     render() {
         return (
-            <div tabIndex="-1" className="App-gameContainer" onKeyPress={this.onKeyPress}>
+            <div tabIndex="-1" className="App-gameContainer" onKeyDown={(event) => this.onKeyDown(event)}>
+                <StartButton isVisible={this.state.controlState} onClick={() => this.onControlButtonClick()}></StartButton>
                 <GameField fieldState={this.state.fieldState}></GameField>
                 <ScoreField score={this.state.score}></ScoreField>
             </div>
+        )
+    }
+}
+
+class StartButton extends React.Component {
+    render() {
+        return (
+            <div onClick={this.props.onClick} className={`App-controlButton ${this.props.isVisible ? 'startButton ' : ''}`} />
         )
     }
 }

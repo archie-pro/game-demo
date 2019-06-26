@@ -4,8 +4,8 @@ export function rotateFigureClockwise(figure, angle) {
     let rotaionMatrix;
     if (angle === 90) {
         rotaionMatrix = [
-            [0, 1],
-            [-1, 0]
+            [0, -1],
+            [1, 0]
         ];
     }
     else if (angle === 180) {
@@ -16,8 +16,8 @@ export function rotateFigureClockwise(figure, angle) {
     }
     else if (angle === 270) {
         rotaionMatrix = [
-            [0, -1],
-            [1, 0]
+            [0, 1],
+            [-1, 0]
         ];
     }
     else {
@@ -30,7 +30,7 @@ export function rotateFigureClockwise(figure, angle) {
 
     const updatedRotationPoint = findRotationPoint(updatedFigure);
 
-    let pointDiff = updatedRotationPoint.substitute(rotatePoint);
+    let pointDiff = updatedRotationPoint.substitute(rotationPoint);
 
     return updatedFigure.map(point => point.substitute(pointDiff));
 }

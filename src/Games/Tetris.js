@@ -77,23 +77,32 @@ export default class Tetris {
 
     onStart(updateCallback, defeatCallback) {
         this._initiateGame();
-
-        this._timerId = setInterval(() => { this._onTick(updateCallback, defeatCallback) }, TICK_INTERVAL);
+        this._updateCallback = updateCallback;
+        this._defeatCallback = defeatCallback;
+        this._timerId = setInterval(() => { this._onTick() }, TICK_INTERVAL);
     }
 
     onPause() {
-        clearInterval(this._timerId);
+        if (!this._isPause) {
+            clearInterval(this._timerId);
+            this._isPause = true;
+        }
+        else {
+            this._userInput = this._getEmptyUserInputs();
+            this._timerId = setInterval(() => { this._onTick() }, TICK_INTERVAL);
+            this._isPause = false;
+        }
     }
 
     onReset() {
         clearInterval(this._timerId);
-
+        this._resetGame();
     }
 
     onArrowUp() { }
 
     onArrowDown() {
-        //this._userInput.moveAxisY++;
+        this._userInput.moveAxisY++;
     }
 
     onArrowLeft() {
@@ -122,40 +131,56 @@ export default class Tetris {
         this._linesWasCleared = false;
     }
 
+    _resetGame() {
+        const defaultState = this.getEmptyState();
+        this._gameField = defaultState.fieldState;
+        this._score = defaultState.score;
+        this._userInput = null;
+        this._figureCoordinates = null;
+        this._ticksToDrop = null;
+        this._linesWasCleared = null;
+        this._updateCallback(defaultState);
+    }
+
     _onTick(updateCallback, defeatCallback) {
-        const moves = this._getNormalizedMovesByUserInput(this._userInput);
+        let moves = this._getNormalizedMovesByUserInput(this._userInput);
         this._userInput = this._getEmptyUserInputs();
 
         let figure = this._figureCoordinates;
+
         if (this._ticksToDrop === 0) {
-            figure = this._dropFigure(figure);
+            if (this._needDropLines) {
+                this._needDropLines = this._dropFullLines(this._gameField);
+            }
+            moves.y++;
             this._ticksToDrop = TICKS_TO_FIGURE_DROP;
         }
         else {
             this._ticksToDrop--;
         }
-        figure = this._updateFigureCoordinates(figure, moves);
 
-        const buildingLine = this._getBuildingLine(this._gameField);
-        const isFigureBlocked = this._checkFigureIsBlocked(figure, buildingLine);
+        figure = this._updateFigureCoordinates(figure, moves, this._gameField);
+
+        const isFigureBlocked = this._isFigureIsBlocked(figure, this._gameField);
         if (isFigureBlocked) {
-            figure = this._normalizeFigureAlongY(figure, buildingLine);
-            this._blockFigureOnGameField(figure);
-            this._linesWasCleared = this._dropFullLines(this._gameField);
-            this._figureCoordinates = this._getNextFigure();
-        } else if (this._linesWasCleared) {
-            this._linesWasCleared = this._dropFullLines(this._gameField)
+            this._blockFigureOnGameField(figure, this._gameField);
+            figure = this._getNextFigure();
+            this._needDropLines = true;
         }
 
-        if (isFigureBlocked && !this._linesWasCleared && this._checkDefeatStatement(this._gameField)) {
-            this.onReset();
-            defeatCallback({
+        this._figureCoordinates = figure;
+
+        let isDefeatState = isFigureBlocked && !this._needDropLines && this._checkDefeatStatement(this._gameField);
+        if (!isDefeatState) {
+            this._updateCallback({
                 fieldState: this._getGameFieldPrint(),
                 score: this._score
             });
+
         }
         else {
-            updateCallback({
+            this.onPause();
+            this._defeatCallback({
                 fieldState: this._getGameFieldPrint(),
                 score: this._score
             });
@@ -181,7 +206,7 @@ export default class Tetris {
     _getGameFieldPrint() {
         let fieldState = this._gameField.map(column => column.map(point => point))
         this._figureCoordinates.forEach(point => {
-            if (point.x > 0 && point.y > 0) {
+            if (point.x >= 0 && point.y >= 0) {
                 fieldState[point.x][point.y] = true;
             }
         });
@@ -196,17 +221,14 @@ export default class Tetris {
 
     _getInitialFigureCoordinates(figure) {
         const indentX = Math.floor(GAME_FIELD_COLUMN_COUNT / 2);
-        return figure.points.map(p => new Point(p.x + indentX, p.y));
+        return figure.points.map(p => new Point(p.x + indentX, p.y - 1));
     }
 
-    _dropFigure(figure) {
-        this._moveFigure(figure, new Point(0, 1));
-    }
-
-    _updateFigureCoordinates(figure, moves) {
-        let updatedFigure = this._rotateFigure(figure, moves.rotation);
-        updatedFigure = this._moveFigure(updatedFigure, new Point(moves.x, moves.y));
-        return this._normalizeFigureAlongX(updatedFigure);
+    _updateFigureCoordinates(figure, moves, gameField) {
+        let updatedFigure = this._makeSafetyMove(this._rotateFigure(figure, moves.rotation), figure, gameField);
+        updatedFigure = this._makeSafetyMove(this._moveFigure(updatedFigure, new Point(moves.x, 0)), updatedFigure, gameField);
+        updatedFigure = this._makeSafetyMove(this._moveFigure(updatedFigure, new Point(0, moves.y)), updatedFigure, gameField);
+        return updatedFigure;
     }
 
     _rotateFigure(figure, rotation) {
@@ -220,53 +242,66 @@ export default class Tetris {
         if (moves.isZero()) {
             return figure;
         }
+
         return figure.map(p => p.add(moves));
     }
 
-    _normalizeFigureAlongX(figure) {
-        let maxX = GAME_FIELD_COLUMN_COUNT - 1;
-        let minX = 0;
-        for (let i = 0; i < figure.length; i++) {
-            if (figure[i].x > maxX) {
-                maxX = figure[i].x
+    _isFigureIsBlocked(figure, gameField) {
+        return figure.findIndex(
+            point => {
+                const isFigureOnFieldBottom = point.y === GAME_FIELD_ROW_COUNT - 1;
+                const isFigureOnWallBlock = gameField[point.x][point.y + 1];
+                return isFigureOnFieldBottom || isFigureOnWallBlock;
             }
-            else if (figure[i].x < minX) {
-                minX = figure[i].x
-            }
-        }
-        if (maxX > GAME_FIELD_COLUMN_COUNT - 1) {
-            let diffX = maxX - (GAME_FIELD_COLUMN_COUNT - 1)
-            figure = figure.map(point => point.substitute(new Point(diffX, 0)));
-        }
-        else if (minX < 0) {
-            figure = figure.map(point => point.substitute(new Point(minX, 0)));
-        }
+        ) !== -1
+    }
 
+    _makeSafetyMove(updatedFigure, figure, gameField) {
+        updatedFigure = this._normalizeFigure(updatedFigure);
+        return !this._isFigureIsStuck(updatedFigure, gameField)
+            ? updatedFigure
+            : figure;
+    }
+
+    _isFigureIsStuck(figure, gameField) {
+        return figure.findIndex(
+            point => {
+                const isFigureInWallBlock = gameField[point.x][point.y]
+                return isFigureInWallBlock;
+            }
+        ) !== -1
+    }
+
+    _normalizeFigure(figure) {
+        figure = this._normalizeFigureAlongX(figure);
+        figure = this._normalizeFigureAlongY(figure);
         return figure;
     }
 
-    _checkFigureIsBlocked(figure, buildingLine) {
-        return !figure.every((point, index) => buildingLine[figure[index].x].y > point.y + 1);
+    _normalizeFigureAlongX(figure) {
+        const figureMaxX = Math.max.apply(null, figure.map(point => point.x));
+        const figureMinX = Math.min.apply(null, figure.map(point => point.x));
+        let diffX = 0;
+        if (figureMaxX > GAME_FIELD_COLUMN_COUNT - 1) {
+            diffX = GAME_FIELD_COLUMN_COUNT - 1 - figureMaxX;
+        }
+        else if (figureMinX < 0) {
+            diffX = -figureMinX;
+        }
+        return diffX
+            ? figure.map(point => point.add(new Point(diffX, 0)))
+            : figure;
     }
 
-    _normalizeFigureAlongY(figure, buildingLine) {
-        let offsetY = 0;
-        for (let i = 0; i < figure.length; i++) {
-            if (figure[i].y - buildingLine[figure[i].x].y > offsetY - 1) {
-                offsetY = figure[i].y - buildingLine[figure[i].x].y + 1;
-            }
-        }
-        if (offsetY) {
-            return figure.map(point => point.add(new Point(0, offsetY)));
+    _normalizeFigureAlongY(figure) {
+        const figureMaxY = Math.max.apply(null, figure.map(point => point.y));
+
+        if (figureMaxY > GAME_FIELD_ROW_COUNT - 1) {
+            let diffY = GAME_FIELD_ROW_COUNT - 1 - figureMaxY;
+            figure = figure.map(point => point.add(new Point(0, diffY)));
         }
 
         return figure
-    }
-
-    _getBuildingLine(gameField) {
-        return gameField.map(
-            (row, index) => new Point(index, row.indexOf(true))
-        );
     }
 
     _blockFigureOnGameField(figure, gameField) {
@@ -332,8 +367,8 @@ export default class Tetris {
     }
 
     _checkDefeatStatement(gameField) {
-        for (let i = 0; i < GAME_FIELD_ROW_COUNT; i++) {
-            if (gameField[-1][i]) {
+        for (let i = 0; i < GAME_FIELD_COLUMN_COUNT; i++) {
+            if (gameField[i][-1]) {
                 return true;
             }
         }

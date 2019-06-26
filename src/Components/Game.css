@@ -41,3 +41,18 @@
 .App-gameFieldSquare.active {
     background-color: #015a07;
 }
+
+.App-controlButton{
+    display: none;
+    background-size: contain;
+    width: 200px;
+    height: 200px;
+    position: absolute;
+    top: 400px;
+    left: 250px;
+}
+
+.App-controlButton.startButton{
+    display: block;
+    background-image: url(/start_button.png);
+}

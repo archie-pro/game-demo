@@ -13,7 +13,24 @@ export function getDefaultState() {
 }
 
 export default class StubGame {
+
     getEmptyState() {
         return getDefaultState();
     }
+
+    onStart() { }
+
+    onPause() { }
+
+    onReset() { }
+
+    onArrowUp() { }
+
+    onArrowDown() { }
+
+    onArrowLeft() { }
+
+    onArrowRight() { }
+
+    onAction() { }
 }
