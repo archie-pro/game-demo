@@ -1,6 +1,5 @@
 import React from 'react';
 import HeaderLink from "./HeaderLink.js"
-import logo from "./logo.png";
 import "./Header.css"
 
 export default class Header extends React.Component {
@@ -13,7 +12,7 @@ export default class Header extends React.Component {
         return (
             <header className="App-header" >
                 <a href=".">
-                    <img className="App-headerLogo" src={logo} alt="logo" />
+                    <img className="App-headerLogo" src="/logo.png" alt="logo" />
                 </a>
                 <ul>
                     {links.map((link) => <HeaderLink key={link.href} link={link} />)}
