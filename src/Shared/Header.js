@@ -1,6 +1,6 @@
 import React from 'react';
 import HeaderLink from "./HeaderLink.js"
-import "./Header.css"
+import "./Shared.css"
 
 export default class Header extends React.Component {
     render() {
