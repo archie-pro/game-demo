@@ -3,6 +3,7 @@ import { rotateFigureClockwise } from './Common/Matrix';
 import Point from './Common/Point';
 
 const TICKS_TO_FIGURE_DROP = 20;
+const MAX_LEVEL = 15;
 const TICK_INTERVAL = 50;
 const ADDITIONAL_ROWS = 4;
 
@@ -83,19 +84,10 @@ export default class Tetris {
     }
 
     onPause() {
-        if (!this._isPause) {
-            clearInterval(this._timerId);
-            this._isPause = true;
-        }
-        else {
-            this._userInput = this._getEmptyUserInputs();
-            this._timerId = setInterval(() => { this._onTick() }, TICK_INTERVAL);
-            this._isPause = false;
-        }
+        this._pauseGame();
     }
 
     onReset() {
-        clearInterval(this._timerId);
         this._resetGame();
     }
 
@@ -127,64 +119,107 @@ export default class Tetris {
         this._score = defaultState.score;
         this._userInput = this._getEmptyUserInputs();
         this._figureCoordinates = this._getNextFigure();
-        this._ticksToDrop = TICKS_TO_FIGURE_DROP;
+        this._ticksToDrop = this._getTicksToDrop();;
         this._linesWasCleared = false;
     }
 
     _resetGame() {
+        clearInterval(this._timerId);
         const defaultState = this.getEmptyState();
         this._gameField = defaultState.fieldState;
         this._score = defaultState.score;
         this._userInput = null;
         this._figureCoordinates = null;
-        this._ticksToDrop = null;
+        this._ticksToDrop = 0;
         this._linesWasCleared = null;
         this._updateCallback(defaultState);
     }
 
-    _onTick(updateCallback, defeatCallback) {
-        let moves = this._getNormalizedMovesByUserInput(this._userInput);
+    _pauseGame() {
+        if (!this._isPause) {
+            clearInterval(this._timerId);
+            this._isPause = true;
+        }
+        else {
+            this._userInput = this._getEmptyUserInputs();
+            this._timerId = setInterval(() => { this._onTick() }, TICK_INTERVAL);
+            this._isPause = false;
+        }
+    }
+
+    _onTick() {
+        let moves = this._normailzeMovesByUserInput(this._userInput);
         this._userInput = this._getEmptyUserInputs();
 
+        let gameField = this._gameField;
         let figure = this._figureCoordinates;
+        let needDropLines = false;
+        let score = { figure: false, rowCount: 0 };
 
         if (this._ticksToDrop === 0) {
-            if (this._needDropLines) {
-                this._needDropLines = this._dropFullLines(this._gameField);
+            needDropLines = this._doFullLinesExist(gameField);
+            if (needDropLines) {
+                let rowCount = this._dropFullLines(gameField);
+                score.rowCount = rowCount;
+                needDropLines = this._doFullLinesExist(gameField);
             }
-            moves.y++;
-            this._ticksToDrop = TICKS_TO_FIGURE_DROP;
+            moves = this._updateMovesToDropFigure(moves);
+            this._ticksToDrop = this._getTicksToDrop();
         }
         else {
             this._ticksToDrop--;
         }
 
-        figure = this._updateFigureCoordinates(figure, moves, this._gameField);
 
-        const isFigureBlocked = this._isFigureIsBlocked(figure, this._gameField);
+        figure = this._updateFigureCoordinates(figure, moves, gameField);
+
+        const isFigureBlocked = this._isFigureIsBlocked(figure, gameField);
         if (isFigureBlocked) {
-            this._blockFigureOnGameField(figure, this._gameField);
+            this._blockFigureOnGameField(figure, gameField);
+            score.figure = true;
             figure = this._getNextFigure();
-            this._needDropLines = true;
+            needDropLines = this._doFullLinesExist(gameField);
+            score.figure = true;
         }
 
         this._figureCoordinates = figure;
+        this._updateScoreAndLevel(score);
 
-        let isDefeatState = isFigureBlocked && !this._needDropLines && this._checkDefeatStatement(this._gameField);
+        let isDefeatState = isFigureBlocked && !needDropLines && this._checkDefeatStatement(this._gameField);
+        this._processIsDefeatState(isDefeatState);
+    }
+
+    _processIsDefeatState(isDefeatState) {
+        const state = {
+            fieldState: this._getGameFieldPrint(),
+            score: this._score
+        }
         if (!isDefeatState) {
-            this._updateCallback({
-                fieldState: this._getGameFieldPrint(),
-                score: this._score
-            });
-
+            this._updateCallback(state);
         }
         else {
             this.onPause();
-            this._defeatCallback({
-                fieldState: this._getGameFieldPrint(),
-                score: this._score
-            });
+            this._defeatCallback(state);
         }
+    }
+
+    _updateScoreAndLevel(state) {
+        const POINTS_OF_FIGURE = 4;
+        const POINTS_OF_ROW = 10;
+        if (state.figure) {
+            this._score.points += POINTS_OF_FIGURE;
+        }
+        if (state.rowCount) {
+            this._score.points += state.rowCount * POINTS_OF_ROW;
+        }
+        let level = Math.floor(this._score.points / 100);
+        this._score.level = level < MAX_LEVEL
+            ? level
+            : MAX_LEVEL;
+    }
+
+    _getTicksToDrop() {
+        return TICKS_TO_FIGURE_DROP - this._score.level;
     }
 
     _createGameField() {
@@ -229,6 +264,11 @@ export default class Tetris {
         updatedFigure = this._makeSafetyMove(this._moveFigure(updatedFigure, new Point(moves.x, 0)), updatedFigure, gameField);
         updatedFigure = this._makeSafetyMove(this._moveFigure(updatedFigure, new Point(0, moves.y)), updatedFigure, gameField);
         return updatedFigure;
+    }
+
+    _updateMovesToDropFigure(moves) {
+        moves.y++;
+        return moves;
     }
 
     _rotateFigure(figure, rotation) {
@@ -308,7 +348,7 @@ export default class Tetris {
         figure.forEach(point => gameField[point.x][point.y] = true);
     }
 
-    _getNormalizedMovesByUserInput(userInput) {
+    _normailzeMovesByUserInput(userInput) {
         const maxXMove = GAME_FIELD_COLUMN_COUNT - 1;
         const maxYMove = GAME_FIELD_ROW_COUNT - 1;
         const maxRotatedPostition = 4;
@@ -330,19 +370,25 @@ export default class Tetris {
         };
     }
 
-    _dropFullLines(gameField) {
-        let isClear = false;
+    _doFullLinesExist(gameField) {
         for (let i = 0; i < GAME_FIELD_ROW_COUNT; i++) {
             if (this._isRowFull(gameField, i)) {
-                this._clearRow(gameField, i);
-                isClear = true;
+                return true;
             }
         }
-        if (isClear) {
-            this._dropBlocks(gameField);
-            return true;
-        }
         return false;
+    }
+
+    _dropFullLines(gameField) {
+        let count = 0;
+        for (let i = 0; i < GAME_FIELD_ROW_COUNT; i++) {
+            if (this._isRowFull(gameField, i)) {
+                count++;
+                this._clearRow(gameField, i);
+            }
+        }
+        this._dropBlocks(gameField);
+        return count;
     }
 
     _isRowFull(gameField, rowIndex) {

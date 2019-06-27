@@ -35,7 +35,7 @@ export default class GameContainer extends React.Component {
 
     onDefeat(gameState) {
         this.setState(gameState);
-        this.setState({ isControlVisible: true });
+        this.setState({ controlState: "start" });
     }
 
     onKeyDown(event) {
@@ -69,8 +69,9 @@ export default class GameContainer extends React.Component {
     render() {
         return (
             <div tabIndex="-1" className="App-gameContainer" onKeyDown={(event) => this.onKeyDown(event)}>
-                <StartButton isVisible={this.state.controlState} onClick={() => this.onControlButtonClick()}></StartButton>
-                <GameField fieldState={this.state.fieldState}></GameField>
+                <GameField fieldState={this.state.fieldState}>
+                    <StartButton isVisible={this.state.controlState} onClick={() => this.onControlButtonClick()}></StartButton>
+                </GameField>
                 <ScoreField score={this.state.score}></ScoreField>
             </div>
         )

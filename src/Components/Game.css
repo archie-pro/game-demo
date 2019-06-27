@@ -2,7 +2,7 @@
     outline: none;
     margin: 5% 2%;
     width: 95%;
-    max-width: 800px;
+    min-width: 600px;
     height: 90%;
     height: calc(100% - 150px);
     max-height: 1000px;
@@ -11,10 +11,11 @@
 }
 
 .App-gameField {
+    position: relative;
+    min-width: 400px;
     outline: none;
     margin: 5px;
     justify-content: center;
-    overflow: hidden;
     flex: 70%;
     flex-wrap: wrap;
     display: flex;
@@ -22,7 +23,7 @@
 }
 
 .App-scoreField {
-    overflow: hidden;
+    min-width: 200px;
     text-align: center;
     border-left: 1px solid #333;
     flex: 30%;
@@ -48,8 +49,11 @@
     width: 200px;
     height: 200px;
     position: absolute;
-    top: 400px;
-    left: 250px;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    margin: auto;
 }
 
 .App-controlButton.startButton{

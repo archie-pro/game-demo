@@ -12,6 +12,7 @@ export default class GameField extends React.Component {
     render() {
         return (
             <div className="App-gameField" onKeyDown={() => alert("123")}>
+                {this.props.children}
                 {this.createGameField(this.props.fieldState)}
             </div>
         );
