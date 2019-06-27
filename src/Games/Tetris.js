@@ -119,8 +119,7 @@ export default class Tetris {
         this._score = defaultState.score;
         this._userInput = this._getEmptyUserInputs();
         this._figureCoordinates = this._getNextFigure();
-        this._ticksToDrop = this._getTicksToDrop();;
-        this._linesWasCleared = false;
+        this._ticksToDrop = this._getTicksToDrop();
     }
 
     _resetGame() {
@@ -131,7 +130,6 @@ export default class Tetris {
         this._userInput = null;
         this._figureCoordinates = null;
         this._ticksToDrop = 0;
-        this._linesWasCleared = null;
         this._updateCallback(defaultState);
     }
 
