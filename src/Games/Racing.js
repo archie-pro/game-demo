@@ -5,8 +5,8 @@ import Point from './Common/Point';
 const TICK_INTERVAL = 50;
 const LINES_COUNT = 3;
 const CAR_LENGTH = 4;
-const ADDITIONAL_ROWS = 4;
 const TICKS_TO_CAR_DROP = 10;
+const MAX_LEVEL = 8;
 
 export default class Racing {
 
@@ -93,13 +93,12 @@ export default class Racing {
             if (this._isNewCarsNeeded(this._gameCars)) {
                 this._addNewCars(this._gameCars);
             }
+            this._updateScoreAndLevel();
             this._ticksToDrop = this._getTicksToDrop();
         }
         else {
             this._ticksToDrop--;
         }
-
-        this._updateScore();
 
         let isCrash = this._checkIfCrash(this._userCar, this._gameCars);
         this._processIsCrashState(isCrash);
@@ -138,8 +137,12 @@ export default class Racing {
         return fieldState;
     }
 
-    _updateScore() {
+    _updateScoreAndLevel() {
         this._score.points += 1;
+        let level = Math.floor(this._score.points / 100);
+        this._score.level = level < MAX_LEVEL
+            ? level
+            : MAX_LEVEL;
     }
 
     _addNewCars(cars) {
@@ -160,7 +163,7 @@ export default class Racing {
     }
 
     _getTicksToDrop() {
-        return TICKS_TO_CAR_DROP;
+        return TICKS_TO_CAR_DROP - this._score.level;
     }
 
     _dropCars(cars, offsetY) {
